@@ -1,0 +1,100 @@
+<div dir="rtl">
+
+# 🗺️ خطة تنفيذ مكتبة الرسومات (SadUI)
+
+مرجع التصميم: **RFC sadlang-rfcs#1**. هذه الوثيقة تشغيليّة: الوضع الراهن، مسارات الكود، والشرائح القادمة.
+
+---
+
+## 1) المعماريّة في سطور
+
+نظام SadUI يقوم على **مصدر حقيقة واحد** للعناصر ومسار موحَّد من المصدر إلى الإطار المرسوم، يخدم **محرّكين**:
+
+- **المفسّر (`sad-run`)** — يقيّم شجرة AST مباشرةً، ويبني شجرة IR للعناصر عبر `WidgetBuilder`، ثمّ يرسمها.
+- **المترجم (`sad-build`)** — يخفض AST إلى **SIR** ثمّ إلى LLVM IR، ويُصدِر نداءات إلى **مكتبة وقت تشغيل الواجهات** (`sad_rt_ui`) التي تجسّر إلى نواة `sad_ui` ذاتها التي يستعملها المفسّر.
+
+الهدف المعماريّ: **سلوك متطابق** بين المحرّكين فوق نفس النواة (`sad_ui`) ونفس كتالوج العناصر (`ui_widgets.yaml`).
+
+> المخططات التفصيليّة (المعماريّة، مسارات الكود، خطّ الربط، تدفّق الإصلاح) في [`../diagrams/`](../diagrams/).
+
+---
+
+## 2) مسارات الكود (خريطة الملفّات)
+
+| الطبقة | المسار | الدور |
+|---|---|---|
+| مصدر الحقيقة | `language-truth/builtins/ui_widgets.yaml` | كتالوج العناصر (استراتيجيّة `RUNTIME_CALL`) |
+| المحلّل المشترك | `shared/parser/src/ui/parser_ui.cpp` | `parseWidgetExpression`، سلسلة المعدّلات، الأبناء |
+| المحلّل المشترك | `shared/parser/src/declarations/parser_modules.cpp` | استيراد/تصدير الوحدات (`صدّر *`) |
+| عقد AST | `shared/ast/include/ui_nodes.h` | `UIWidgetExprNode`، `UIModifierNode`، `UIStateDecl` |
+| عقد AST | `shared/ast/include/module_nodes.h` | `ReExportStmt` |
+| المفسّر — تقييم UI | `interpreter/src/visitors/expression_evaluator_ui.cpp` | تقييم `UIWidgetExprNode` (مسار `اعرض`) |
+| المفسّر — معدّلات | `interpreter/src/ui/ui_widget_method_call.cpp` | سلسلة معدّلات `WidgetBuilder` (تُعيد العنصر) |
+| المفسّر — بنّاء | `interpreter/src/ui/widget_builder.cpp` | بناء عقد IR، تسجيل الأحداث |
+| المفسّر — جسر | `interpreter/src/ui/ui_bridge.cpp` | الوسم + التسجيل كوحدة مدمجة |
+| المترجم — مصانع | `compiler/src/frontend/builders/builtins_ui.cpp` | خفض `زر/عمود/نص_عنصر/...` إلى `BUILTIN_UI_*` |
+| المترجم — معدّلات | `compiler/src/frontend/builders/call_method_dispatch.cpp` | خفض المعدّلات الانسيابية (تُعيد المقبض) |
+| المترجم — وحدات | `compiler/src/frontend/builders/statement_extension.cpp` | معالجة `ReExportStmt` في SIR |
+| المترجم — opcodes | `compiler/include/frontend/sir_types.h` | تعداد `BUILTIN_UI_*` (مصانع/شجرة/setters/تطبيق) |
+| المترجم — توليد خلفيّ | `compiler/src/backend/llvm/builders/platform/ui_ops.cpp` | إصدار نداءات `sad_*` |
+| المترجم — درايفر الربط | `tools/compiler/compiler_driver_build_utils.cpp` | اكتشاف وإلحاق مكتبات وقت التشغيل |
+| المترجم — رابط | `tools/compiler/compiler_driver_lld.cpp` | بناء أمر `lld-link` |
+| وقت التشغيل (C ABI) | `runtime/sad_ui_runtime.cpp` | `sad_button/sad_text/sad_column/sad_set_*` |
+| النواة | `sad_ui/` | IR + تخطيط RTL + Reconciler + بواطن العرض |
+| طرف ثالث | `graphics/third_party/SDL2`, `graphics/third_party/SDL2_ttf` | SDL2 / SDL2_ttf المُورَّدتان |
+| الاختبار | `tests/integration/ui_min.ص` | بوّابة المطابقة مفسّر↔مترجم |
+
+---
+
+## 3) المراحل
+
+### المرحلة 1 — P0 (مكتملة)
+- **P0-1** وسم `نوع(زر())`=«كائن» — `#62`.
+- **P0-2** إنشاء `واجهة` + توصيل `@حالة` — `#67`.
+- **P0-3** ترجمة برامج UI طرفًا لطرف (headless) — `#119`.
+
+### المرحلة 2 — توحيد المصدر (منفَّذة جزئيًّا)
+- توحيد كتالوج العناصر في `language-truth/builtins/ui_widgets.yaml` — منفَّذ.
+
+### المرحلة 3 — اكتمال التكافؤ المرسوم (قادمة)
+- **م-أ3ر**: أثر المعدّلات في المخرَج المرسوم (لا headless فقط).
+- **م-أ4ع**: تعميم الربط على POSIX + `SDL2_ttf`.
+- **م-تغطية**: توسيع بوّابة المطابقة لحالات أعقد.
+
+---
+
+## 4) تشريح إغلاق P0-3 (الطبقات الأربع)
+
+كُشف بـ`tests/integration/ui_min.ص` و14 مُصغِّرًا أنّ P0-3 **أربع طبقات متراكبة** لا عائق واحد:
+
+| الطبقة | الجذر | الإصلاح | الملفّ |
+|---|---|---|---|
+| **أ-2a** | المحلّل المشترك يرفض `صدّر *` المجرّد ⇒ يفشل تحليل `stdlib/رسومات.ص` في المترجم | دلالة «صدّر كل رموز الوحدة الحاليّة» (مسار فارغ + wildcard)، لا-عمليّة في الزائرَين | `parser_modules.cpp` + `module_nodes.h` + `statement_extension.cpp` + `statement_executor_modules.cpp` |
+| **أ-2b** | `نص_عنصر` (TEXT_WIDGET) غير مربوط ⇒ يسقط إلى VOID (تباعد صامت) | توحيد المطابقة مع المرادف التاريخيّ `نص_عرض` | `builtins_ui.cpp` |
+| **أ-3** | معدّلات SadUI الانسيابية غير منفّذة ⇒ إسناد ناتجها يستدعي `getNullValue(void)` ⇒ انهيار LLVM | خفض انسيابيّ: نداء معدّل على مقبض عنصر يُعيد العنصر نفسه (دلالة `WidgetBuilder`) | `call_method_dispatch.cpp` |
+| **أ-4** | درايفر الربط لا يربط مكتبة وقت تشغيل الواجهات ⇒ `undefined sad_button/sad_text/sad_column` | اكتشاف `sad_rt_ui` + إلحاق `sad_rt_ui→sad_ui` + SDL2/SDL2_ttf المُورَّدتين | `compiler_driver_build_utils.cpp` |
+
+**النتيجة:** `sad-build` يترجم `ui_min.ص` ويربطه ويُنتج تنفيذيًّا، وتشغيله = المفسّر **5/5**، بلا انحدار على البرامج غير الرسوميّة (الرابط يُسقِط مكتبات UI/SDL غير المُشار إليها).
+
+---
+
+## 5) الشرائح القادمة (تفصيل)
+
+### م-أ3ر — أثر المعدّلات في المخرَج المرسوم
+- **المشكلة**: إغلاق P0-3 يحقّق تطابق **headless** فقط؛ أثر المعدّل (اللون/الحدث) لا يُطبَّق في المخرَج المرسوم لأنّ المترجم لا يُصدِر setter مطابقًا للقالب، وABI الأحداث غير موجود.
+- **المقترح**: ABI زمن تشغيل عامّ نظير `setIRProperty`/`addIREvent` في المفسّر، مع خفض المعدّلات إليه في `call_method_dispatch.cpp` مع الحفاظ على إعادة المقبض.
+- **معيار القبول**: برنامج برسم فعليّ يُظهر لون/حدثًا مطبَّقًا، مطابقًا للمفسّر.
+
+### م-أ4ع — ربط POSIX + النصّ المنسّق
+- **المشكلة**: مسار ربط الواجهات المتحقَّق هو ويندوز/lld؛ على POSIX قد تُضاف الواجهات بلا SDL2، و`SDL2_ttf` غير مُورَّدة في بعض البيئات (يؤثّر على `نص_منسق`).
+- **المقترح**: حراسة منصّة لإلحاق الواجهات + مسار SDL على POSIX + توريد/كشف `SDL2_ttf`، مع تشخيص واضح عند الغياب.
+- **معيار القبول**: ترجمة وربط برنامج UI على Linux/macOS في CI.
+
+### م-تغطية — توسيع بوّابة المطابقة
+- إضافة حالات: حاويات متداخلة، عناصر أكثر، أحداث متعدّدة، حالة مركّبة — وتأكيد تطابق المفسّر↔المترجم لكلٍّ.
+
+---
+
+> ⚠️ محتوى **عامّ** — لا أرقام ماليّة ولا أسرار. راجع [GOVERNANCE.md](../../../GOVERNANCE.md).
+
+</div>

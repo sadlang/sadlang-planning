@@ -6,6 +6,7 @@
 
 | المشروع | الحالة | المالك | مستودع الكود |
 |---|---|---|---|
+| [graphics-sadui](./graphics-sadui/) | `قيد التنفيذ` | فريق الرسومات | [s-programming-language](https://github.com/sadlang/s-programming-language) |
 | [vscode-rtl](./vscode-rtl/) | `قيد التنفيذ` | فريق الأدوات | [vs_code_rtl](https://github.com/sadlang/vs_code_rtl) |
 
 > [`_TEMPLATE/`](./_TEMPLATE/) ليس مشروعًا — هو القالب. انسخه لبدء خطة جديدة (راجع [CONTRIBUTING.md](../CONTRIBUTING.md)).
