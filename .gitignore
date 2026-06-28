@@ -1,0 +1,16 @@
+# Python (مدقّق الحدود)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# نظام التشغيل والمحرّر
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# مخرجات مؤقّتة
+*.tmp
+*.bak

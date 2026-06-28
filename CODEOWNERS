@@ -1,0 +1,11 @@
+# مالكو الكود — sadlang-planning
+# مدراء التنفيذ والمنتجات يملكون التخطيط؛ فريق core يشرف على الحوكمة والحدود.
+
+# افتراضيًّا: فريق التخطيط
+*                       @sadlang/planning
+
+# الحوكمة والحدود والأتمتة: إشراف core إلزاميّ
+/GOVERNANCE.md          @sadlang/core
+/scripts/               @sadlang/core
+/.github/               @sadlang/core
+/CODEOWNERS             @sadlang/core

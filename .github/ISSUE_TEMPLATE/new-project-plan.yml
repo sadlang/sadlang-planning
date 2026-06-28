@@ -1,0 +1,59 @@
+name: 📦 خطة مشروع جديدة
+description: اقترح إضافة خطة تنفيذ لمشروع مفتوح المصدر جديد
+title: "[خطة]: <اسم المشروع>"
+labels: ["خطة-مشروع"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        هذا المستودع **عامّ**. لا تُدرج أرقامًا ماليّة أو أسرارًا استراتيجيّة — راجع GOVERNANCE.md.
+  - type: input
+    id: project-name
+    attributes:
+      label: اسم المشروع
+      description: اسم المجلد المقترح تحت projects/ (إنجليزيّ، بشَرطات).
+      placeholder: vscode-rtl
+    validations:
+      required: true
+  - type: input
+    id: code-repo
+    attributes:
+      label: مستودع الكود
+      description: رابط مستودع الكود المفتوح المرتبط.
+      placeholder: https://github.com/sadlang/<repo>
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: المالك
+      description: مدير المنتج/التنفيذ المسؤول.
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: الهدف
+      description: ما الذي يحقّقه المشروع، ومن المستفيد.
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: الحالة الابتدائيّة
+      options:
+        - مقترح
+        - قيد التنفيذ
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: إقرار الحدود
+      options:
+        - label: لا يحتوي هذا المحتوى على أرقام ماليّة أو ميزانيات.
+          required: true
+        - label: لا يحتوي على مواد سرّيّة أو استراتيجيّة أو خطط منتجات مغلقة.
+          required: true
+        - label: لا يحتوي على مفاتيح/رموز/كلمات مرور.
+          required: true
