@@ -6,6 +6,7 @@
 
 | المشروع | الحالة | المالك | مستودع الكود |
 |---|---|---|---|
+| [mihrab-editor](./mihrab-editor/) | `تخطيط` | فريق الأدوات | _لم يُنشأ بعد_ |
 | [graphics-sadui](./graphics-sadui/) | `قيد التنفيذ` | فريق الرسومات | [s-programming-language](https://github.com/sadlang/s-programming-language) |
 | [lsp-server](./lsp-server/) | `قيد التنفيذ` | فريق الأدوات | [s-programming-language](https://github.com/sadlang/s-programming-language) · `tools/lsp/` |
 | [unified-core-rfc10](./unified-core-rfc10/) | `قيد التنفيذ` | فريق القلب (core) | [s-programming-language](https://github.com/sadlang/s-programming-language) |
